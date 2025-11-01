@@ -25,7 +25,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         : base(applicationPaths, xmlSerializer)
     {
         Instance = this;
-                System.Console.WriteLine("[ExcludedLibraries] Plugin initialized - Version 3.1.0");
+                System.Console.WriteLine("[ExcludedLibraries] Plugin initialized - Version 1.0");
     }
 
     /// <summary>

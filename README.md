@@ -1,17 +1,26 @@
-# Jellyfin Plugin: Excluded Libraries Home Sections
+# Jellyfin Plugin: Valid Media Home Sections
 
-A Jellyfin plugin that creates custom home sections displaying content from your libraries while excluding specific libraries you specify. Perfect for filtering out kids content, documentaries, or any other libraries from your main home screen.
+A Jellyfin plugin that creates custom home sections displaying **only media with valid, accessible files**. This plugin filters out broken symlinks, missing files, and items with corrupt metadata - ensuring your home screen only shows content you can actually watch/listen to.
 
-## Features
+## What This Plugin Does
 
-- 🎬 **Flexible Content Filtering**: Exclude any libraries from your home sections
+This plugin creates home sections that display **media with verified file access**:
+
+- ✅ Shows only items with **valid file sizes** (filters out broken/missing files)
 - 🎯 **Content Type Selection**: Choose to include movies, TV series, music albums, or any combination
 - 🔄 **Multiple Sorting Options**: Sort by date added, date played, release date, name, or random
 - ⚙️ **Easy Configuration**: Configure everything through the Jellyfin dashboard
-- 🚀 **Auto-Registration**: Automatically registers with Home Screen Sections plugin on Jellyfin startup (v2.0+)
+- 🚀 **Auto-Registration**: Automatically registers with Home Screen Sections plugin on Jellyfin startup
 - 🏠 **Seamless Integration**: Works with the Home Screen Sections (Modular Home) plugin
 - 🔍 **Comprehensive Logging**: All logs prefixed with `[ExcludedLibraries]` for easy debugging
-- 📊 **Version Tracking**: Config page displays version number for cache-busting
+
+## Why Use This Plugin?
+
+Perfect for users who:
+- Have broken symlinks or missing files in their libraries
+- Want to see only watchable/playable content on the home screen
+- Need to filter out items with corrupt metadata
+- Share libraries with others and want a clean experience
 
 ## Prerequisites
 
@@ -32,7 +41,31 @@ A Jellyfin plugin that creates custom home sections displaying content from your
 
 ## Installation
 
-### Step 1: Build the Plugin
+### Method 1: Install from Repository (Recommended)
+
+The easiest way to install and receive automatic updates:
+
+1. **Add the plugin repository:**
+   - Go to **Dashboard** → **Plugins** → **Repositories**
+   - Click **+** (Add Repository)
+   - Enter:
+     - **Repository Name**: `Valid Media Sections`
+     - **Repository URL**: `https://sraja7272.github.io/Jellyfin-Hide-Empty-Files/manifest.json`
+   - Click **Save**
+
+2. **Install the plugin:**
+   - Go to **Plugins** → **Catalog**
+   - Find **"Excluded Libraries Home Sections"**
+   - Click **Install**
+   - Restart Jellyfin
+
+3. **Done!** The plugin will automatically update when new versions are released.
+
+### Method 2: Manual Installation (For Development)
+
+If you want to build from source or test modifications:
+
+#### Step 1: Build the Plugin
 
 ```bash
 cd src
@@ -43,7 +76,7 @@ dotnet build -c Release
 
 The DLL will be in: `src/bin/Release/net8.0/Jellyfin.Plugin.ExcludedLibraries.dll`
 
-### Step 2: Copy to Docker Container
+#### Step 2: Copy to Docker Container
 
 ```bash
 # Copy DLL to your Jellyfin config volume
@@ -56,7 +89,7 @@ cp src/bin/Release/net8.0/Jellyfin.Plugin.ExcludedLibraries.dll \
   /path/to/jellyfin/config/plugins/ExcludedLibraries/
 ```
 
-### Step 3: Restart Jellyfin
+#### Step 3: Restart Jellyfin
 
 ```bash
 docker restart jellyfin
@@ -65,7 +98,7 @@ docker restart jellyfin
 docker-compose restart jellyfin
 ```
 
-### Step 4: Verify Installation
+#### Step 4: Verify Installation
 
 1. Go to **Dashboard** → **Plugins**
 2. Look for **"Excluded Libraries Home Sections"**
@@ -79,22 +112,20 @@ docker-compose restart jellyfin
 2. Configure your preferences:
 
    **Display Settings:**
-   - **Section Display Name**: What to call this section (e.g., "Movies for Adults")
-   - **Maximum Items**: How many items to show (1-100, recommended: 20-30)
+   - **Section Display Name**: What to call this section (e.g., "Valid Content", "Watchable Media")
 
    **Content Types:**
-   - ☑ **Include Movies**: Show movies
-   - ☑ **Include TV Series**: Show TV shows
-   - ☐ **Include Music Albums**: Show music
+   - ☑ **Include Movies**: Show movies with valid files
+   - ☑ **Include TV Series**: Show TV series with valid episodes
+   - ☐ **Include Music Albums**: Show music albums with valid tracks
 
    **Sorting:**
    - **Sort By**: Date Added, Date Played, Release Date, Name, or Random
    - **Sort Descending**: Check for newest first
 
-   **Excluded Libraries:**
-   - Check the libraries you want to **EXCLUDE** from this section
-
 3. Click **Save**
+
+**Note:** The plugin automatically filters out items with missing or corrupt files - you don't need to configure anything else!
 
 ### Step 2: Restart Jellyfin
 
@@ -117,70 +148,6 @@ The plugin automatically registers sections with Home Screen Sections on startup
 
 Your custom section should now appear! 🎉
 
-## Usage Examples
-
-### Example 1: Family-Friendly Main Screen
-
-**Goal:** Show all movies except adult content
-
-**Configuration:**
-- Section Display Name: `"Movies for Adults"`
-- Content Types: ✅ Movies
-- Excluded Libraries: ✅ "Kids Movies"
-- Sort: Date Added (Descending)
-
-### Example 2: Entertainment Only
-
-**Goal:** Show movies and TV but not documentaries
-
-**Configuration:**
-- Section Display Name: `"Entertainment"`
-- Content Types: ✅ Movies, ✅ TV Series
-- Excluded Libraries: ✅ "Documentaries"
-- Sort: Date Added (Descending)
-
-### Example 3: Recently Added (Filtered)
-
-**Goal:** Show recent additions except kids content
-
-**Configuration:**
-- Section Display Name: `"New Arrivals"`
-- Content Types: ✅ Movies, ✅ TV Series, ✅ Music
-- Excluded Libraries: ✅ "Kids Movies", ✅ "Kids Shows", ✅ "Kids Music"
-- Sort: Date Added (Descending)
-
-### Example 4: Random Discovery
-
-**Goal:** Random content excluding specific genres
-
-**Configuration:**
-- Section Display Name: `"Discover"`
-- Content Types: ✅ Movies, ✅ TV Series
-- Excluded Libraries: ✅ "Horror", ✅ "Reality TV"
-- Sort: Random
-
-## API Endpoints
-
-The plugin exposes these REST endpoints:
-
-### `GET /ExcludedLibraries/FilteredItems?userId={id}`
-Returns filtered items based on plugin configuration.
-
-**Response:** `QueryResult<BaseItemDto>`
-
-### `GET /ExcludedLibraries/Libraries`
-Returns list of all available libraries.
-
-**Response:**
-```json
-{
-  "Libraries": ["Movies", "TV Shows", "Kids", "Music"]
-}
-```
-
-### `GET /ExcludedLibraries/Configuration`
-Returns current plugin configuration.
-
 ## Logging and Debugging
 
 All plugin operations are logged with the **`[ExcludedLibraries]`** prefix for easy filtering.
@@ -201,9 +168,7 @@ docker logs jellyfin 2>&1 | grep "\[ExcludedLibraries\].*Error"
 Open Developer Tools (F12) → Console tab. All JavaScript operations log with `[ExcludedLibraries]` prefix.
 
 ### Check Version
-The configuration page displays the current version (e.g., `v2.0.2`) in the top-right corner.
-
-See [VERSION_AND_LOGGING.md](VERSION_AND_LOGGING.md) for detailed debugging guides.
+The configuration page displays the current version in the top-right corner.
 
 ## Troubleshooting
 
@@ -236,9 +201,9 @@ See [VERSION_AND_LOGGING.md](VERSION_AND_LOGGING.md) for detailed debugging guid
 
 **Check:**
 1. At least one content type is enabled in configuration
-2. You haven't excluded ALL your libraries
-3. You have items in non-excluded libraries
-4. Try unchecking all exclusions temporarily to test
+2. Verify you have media files with valid file sizes (the plugin filters out items with broken/missing files)
+3. Check your media files aren't broken symlinks
+4. Check Jellyfin logs for file access errors
 
 ### Section Not Appearing in Modular Home
 
@@ -267,13 +232,11 @@ All configurable through the web UI:
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| ExcludedLibraryNames | string[] | [] | Libraries to exclude |
 | SectionDisplayName | string | "Filtered Content" | Name shown on home screen |
-| MaxItems | int | 20 | Number of items to display |
-| IncludeMovies | bool | true | Include movies |
-| IncludeSeries | bool | true | Include TV series |
-| IncludeMusic | bool | false | Include music albums |
-| SortBy | string | "DateCreated" | Sort field |
+| IncludeMovies | bool | true | Include movies with valid files |
+| IncludeSeries | bool | true | Include TV series with valid episodes |
+| IncludeMusic | bool | false | Include music albums with valid tracks |
+| SortBy | string | "DateCreated" | Sort field (DateCreated, DatePlayed, PremiereDate, Name, Random) |
 | SortDescending | bool | true | Sort direction |
 
 ## How It Works
@@ -281,65 +244,38 @@ All configurable through the web UI:
 ```
 User Configures Plugin
         ↓
-Clicks Save
-        ↓
-Configuration Saved
-        ↓
-Restarts Jellyfin
+Clicks Save → Restarts Jellyfin
         ↓
 Sections auto-register on startup
         ↓
 User enables section in Modular Home
         ↓
-Home Screen Sections calls plugin via reflection
+Home Screen Sections calls plugin
         ↓
-Plugin filters items by library
+Plugin queries all media files of selected types
         ↓
-Returns filtered results
+Filters out items with invalid/missing files (Size = null or 0)
+        ↓
+Groups episodes by series, tracks by albums
+        ↓
+Sorts and returns valid content
         ↓
 Displays on home screen
 ```
 
-## Updating the Plugin
+## Technical Details
 
-To update after making changes:
+The plugin uses an efficient filtering approach:
 
-```bash
-# Rebuild
-cd src
-dotnet build -c Release
+1. **Single Query**: Fetches all media files (Movies, Episodes, Audio) in one database query
+2. **File Validation**: Filters items where `Size != null && Size > 0` to ensure files exist and are accessible
+3. **Smart Grouping**: 
+   - Movies are shown as-is
+   - Episodes are grouped by their parent Series
+   - Audio tracks are grouped by their parent Albums
+4. **No N+1 Problem**: Uses a single query then groups in memory for optimal performance
 
-# Copy to container
-docker cp src/bin/Release/net8.0/Jellyfin.Plugin.ExcludedLibraries.dll \
-  jellyfin:/config/plugins/ExcludedLibraries/
-
-# Restart to register sections
-docker restart jellyfin
-```
-
-**Note:** After creating or modifying sections, restart Jellyfin to register them with Home Screen Sections.
-
-## Security
-
-- All endpoints require authentication (`[Authorize]`)
-- Uses Jellyfin's built-in user management
-- Respects library access permissions
-- No sensitive data exposed
-
-## Performance
-
-- Queries are limited to avoid server overload
-- Efficient filtering using LINQ
-- Proper DTO options minimize data transfer
-- Logging for debugging without performance impact
-
-## Contributing
-
-Contributions welcome! Feel free to submit issues or pull requests.
-
-## License
-
-MIT License - see LICENSE file for details
+This ensures you only see content that actually works!
 
 ## Credits
 

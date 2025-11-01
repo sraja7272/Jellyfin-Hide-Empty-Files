@@ -1,6 +1,8 @@
 # Quick Start Guide
 
-Get your custom filtered home section running in 5 minutes!
+Get your valid media home section running in 5 minutes!
+
+This plugin shows only media with **valid, accessible files** - perfect for hiding broken symlinks and missing files.
 
 ## Prerequisites
 
@@ -20,37 +22,51 @@ Restart Jellyfin
 
 ## Installation
 
-### 1. Build
+### Option A: Via Repository (Easiest!)
 
-```bash
-cd src
-dotnet build -c Release
-```
+1. **Add Repository:**
+   - Dashboard → Plugins → Repositories → **+**
+   - Name: `Valid Media Sections`
+   - URL: `https://sraja7272.github.io/Jellyfin-Hide-Empty-Files/manifest.json`
+   - Save
 
-### 2. Copy to Docker
+2. **Install Plugin:**
+   - Plugins → Catalog
+   - Find "Excluded Libraries Home Sections"
+   - Install
 
-```bash
-docker cp src/bin/Release/net8.0/Jellyfin.Plugin.ExcludedLibraries.dll \
-  jellyfin:/config/plugins/ExcludedLibraries/
-```
+3. **Restart Jellyfin**
 
-### 3. Restart
+### Option B: Manual Build
 
-```bash
-docker restart jellyfin
-```
+1. **Build:**
+   ```bash
+   cd src
+   dotnet build -c Release
+   ```
+
+2. **Copy to Docker:**
+   ```bash
+   docker cp src/bin/Release/net8.0/Jellyfin.Plugin.ExcludedLibraries.dll \
+     jellyfin:/config/plugins/ExcludedLibraries/
+   ```
+
+3. **Restart:**
+   ```bash
+   docker restart jellyfin
+   ```
 
 ## Setup
 
 ### 1. Configure
 
 - Go to **Dashboard** → **Plugins** → **Excluded Libraries Home Sections**
-- Enter section name (e.g., "Filtered Content")
+- Enter section name (e.g., "Valid Content", "Watchable Media")
 - Check content types you want (Movies, TV Series, Music)
-- **Check libraries to EXCLUDE** (e.g., check "Kids Movies" to exclude it)
 - Choose sorting preference
 - Click **Save**
 
+✨ Plugin automatically filters out items with missing/broken files!
 ✨ Section automatically registers with Home Screen Sections plugin!
 
 ### 2. Enable
@@ -63,26 +79,32 @@ Done! 🎉
 
 ## Common Setups
 
-**No Kids Content:**
+**Valid Movies:**
 ```
-Name: "Movies for Adults"
+Name: "Watchable Movies"
 Include: ✅ Movies
-Exclude: ✅ "Kids Movies"
+Sort: Date Added (Descending)
 ```
 
-**Entertainment Only:**
+**All Valid Content:**
 ```
-Name: "Entertainment"
-Include: ✅ Movies, ✅ TV Series
-Exclude: ✅ "Documentaries"
+Name: "Valid Media"
+Include: ✅ Movies, ✅ TV Series, ✅ Music
+Sort: Date Added (Descending)
 ```
 
-**Recently Added (Filtered):**
+**Recently Added (Valid Only):**
 ```
-Name: "New Arrivals"  
+Name: "New Arrivals - Working Files"  
 Include: ✅ Movies, ✅ TV Series
 Sort: Date Added (Descending)
-Exclude: ✅ "Kids Content", ✅ "Educational"
+```
+
+**Random Valid Content:**
+```
+Name: "Discover"
+Include: ✅ Movies, ✅ TV Series
+Sort: Random
 ```
 
 ## Troubleshooting
@@ -95,7 +117,8 @@ docker restart jellyfin
 
 **Section empty?**
 - Check at least one content type is enabled
-- Verify you haven't excluded all libraries
+- Verify you have media files with valid sizes (plugin filters broken files)
+- Check for broken symlinks or missing files
 
 **Need more help?**
 See [README.md](README.md) for detailed documentation.

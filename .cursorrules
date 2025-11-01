@@ -1,0 +1,26 @@
+# Cursor Rules for Jellyfin Plugin
+
+## Project Context
+
+This is a Jellyfin plugin (version 1.0) that creates custom home sections displaying only media with valid, accessible files.
+
+### Key Information
+- **Current Version**: 1.0.0
+- **Purpose**: Filter out broken symlinks and missing files from home screen sections
+- **Filtering Method**: Checks file sizes (excludes items where Size == null or Size == 0)
+- **NOT** a library exclusion plugin (despite the internal name "ExcludedLibraries")
+
+### Historical Context
+- Development history and old changelogs are in `CHANGELOG_OLD.md`
+- This plugin went through major refactoring in version 3.0+ before being reset to 1.0
+- Uses reflection for Jellyfin 10.10/10.11 compatibility
+
+### Code Style
+- All logs should use `[ExcludedLibraries]` prefix
+- Use reflection for Jellyfin API calls that changed between versions
+- Version numbers should always be kept in sync across:
+  - `src/Jellyfin.Plugin.ExcludedLibraries.csproj`
+  - `src/Plugin.cs`
+  - `src/Configuration/configPage.html`
+  - `build.yaml`
+

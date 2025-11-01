@@ -39,11 +39,6 @@ public class SectionConfig
     public string DisplayName { get; set; } = "Filtered Content";
 
     /// <summary>
-    /// Gets or sets the list of library names to exclude.
-    /// </summary>
-    public List<string> ExcludedLibraryNames { get; set; } = new();
-
-    /// <summary>
     /// Gets or sets a value indicating whether to include movies.
     /// </summary>
     public bool IncludeMovies { get; set; } = true;
