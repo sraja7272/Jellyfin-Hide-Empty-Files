@@ -1,21 +1,20 @@
 [
-  {
-    "guid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "name": "Excluded Libraries Home Sections",
-    "description": "Create custom home sections displaying only media with valid, accessible files. Filters out broken symlinks and missing files automatically.",
-    "overview": "Create home sections with valid media files only",
-    "owner": "shaheer",
-    "category": "General",
-    "versions": [
-      {
-        "version": "1.1.0.0",
-        "changelog": "Initial release\n\n- Custom home sections for Jellyfin\n- Filter media by valid file sizes (excludes broken/missing files)\n- Content type selection (Movies, TV Series, Music Albums)\n- Multiple sorting options\n- Auto-registration with Home Screen Sections plugin\n- Smart grouping of episodes to series and tracks to albums",
-        "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/sraja7272/Jellyfin-Hide-Empty-Files/releases/download/v1.1.0/jellyfin-plugin-excludedlibraries_1.1.0.zip",
-        "checksum": "4700ee886b831fce7275a55fb2bcdc25",
-        "timestamp": "2025-11-01T00:00:00Z"
-      }
-    ]
-  }
+    {
+        "guid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "name": "Excluded Libraries Home Sections",
+        "description": "Create custom home sections displaying only media with valid, accessible files. Filters out broken symlinks and missing files automatically.",
+        "overview": "Create home sections with valid media files only",
+        "owner": "shaheer",
+        "category": "General",
+        "versions": [
+            {
+                "version": "1.1.0.0",
+                "changelog": "Initial release\n\n- Custom home sections for Jellyfin\n- Filter media by valid file sizes (excludes broken/missing files)\n- Content type selection (Movies, TV Series, Music Albums)\n- Multiple sorting options\n- Auto-registration with Home Screen Sections plugin\n- Smart grouping of episodes to series and tracks to albums",
+                "targetAbi": "10.10.0.0",
+                "sourceUrl": "https://github.com/sraja7272/Jellyfin-Hide-Empty-Files/releases/download/v1.1.0/jellyfin-plugin-excludedlibraries_1.1.0.zip",
+                "checksum": "4700ee886b831fce7275a55fb2bcdc25",
+                "timestamp": "2025-11-01T00:00:00Z"
+            }
+        ]
+    }
 ]
-
