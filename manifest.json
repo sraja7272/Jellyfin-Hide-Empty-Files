@@ -8,11 +8,11 @@
     "category": "General",
     "versions": [
       {
-        "version": "1.0.0.0",
+        "version": "1.1.0.0",
         "changelog": "Initial release\n\n- Custom home sections for Jellyfin\n- Filter media by valid file sizes (excludes broken/missing files)\n- Content type selection (Movies, TV Series, Music Albums)\n- Multiple sorting options\n- Auto-registration with Home Screen Sections plugin\n- Smart grouping of episodes to series and tracks to albums",
         "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/sraja7272/Jellyfin-Hide-Empty-Files/releases/download/v1.0.0/Jellyfin.Plugin.ExcludedLibraries.dll",
-        "checksum": "79137585ca4091cf3e20ff14ca7d9b467caa7e0e3ad5ef890367bfaad4729d84",
+        "sourceUrl": "https://github.com/sraja7272/Jellyfin-Hide-Empty-Files/releases/download/v1.1.0/Jellyfin.Plugin.ExcludedLibraries.dll",
+        "checksum": "3ff13518bea03ec0848735cfc06831f54dd053ed3c6b4020f491eb76a0452aff",
         "timestamp": "2025-11-01T00:00:00Z"
       }
     ]
