@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Filtered Media Home Sections</title>
+    <style>
+        .section-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .section-title {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .section-details {
+            font-size: 0.9em;
+            color: #999;
+            margin: 5px 0;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+        .edit-form {
+            margin-top: 15px;
+            display: none;
+        }
+        .edit-form.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div id="ExcludedLibrariesConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-checkbox,emby-select">
+        <div data-role="content">
+            <div class="content-primary">
+                <div class="verticalSection">
+                    <div class="sectionTitleContainer flex align-items-center">
+                    <h2 class="sectionTitle">Filtered Media Home Sections</h2>
+                    <span style="margin-left: auto; color: #999; font-size: 0.9em;">v3.1.0</span>
+                </div>
+                
+                <p>Create home sections filtered by media type (Movies, Series, Music) that only show items with valid file sizes.</p>
+                
+                <div class="verticalSection">
+                    <div style="background: rgba(100,150,255,0.1); border: 1px solid rgba(100,150,255,0.3); border-radius: 6px; padding: 15px; margin-bottom: 20px;">
+                        <h4 style="margin-top: 0;">ℹ️ How It Works (v3.0.0 - Simplified!)</h4>
+                        <p style="margin-bottom: 10px;"><strong>New Approach:</strong> Simply choose which media types to include (Movies, Series, Music). Items without valid files are automatically filtered out.</p>
+                        <p style="margin-bottom: 0; font-size: 0.9em; color: #999;">
+                            After creating or modifying sections, restart Jellyfin (or run the scheduled task) to register them with Home Screen Sections. Then enable them in Modular Home settings.
+                        </p>
+                    </div>
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3>Your Sections</h3>
+                            <button is="emby-button" type="button" id="addSectionBtn" class="raised button-submit">
+                                <span>+ Add New Section</span>
+                            </button>
+                        </div>
+                        
+                        <!-- New section creation form -->
+                        <div id="newSectionForm" class="section-card" style="display: none;">
+                            <div class="section-header">
+                                <div class="section-title">Create New Section</div>
+                            </div>
+                            <div id="newSectionFormContent"></div>
+                        </div>
+                        
+                        <div id="sectionsContainer">
+                            <!-- Sections will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <script type="text/javascript">
+            var ExcludedLibrariesConfig = {
+                pluginUniqueId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+                version: '3.1.0',
+                currentConfig: null,
+                newSectionData: null,
+                
+                init: function() {
+                    console.log('[ExcludedLibraries] Config page version:', this.version);
+                    this.loadConfiguration();
+                    this.attachEventListeners();
+                },
+                
+                attachEventListeners: function() {
+                    document.getElementById('addSectionBtn').addEventListener('click', function() {
+                        ExcludedLibrariesConfig.addNewSection();
+                    });
+                },
+                
+                loadConfiguration: function() {
+                    console.log('[ExcludedLibraries] Loading configuration...');
+                    Dashboard.showLoadingMsg();
+                    
+                    ApiClient.getPluginConfiguration(this.pluginUniqueId).then(function(config) {
+                        console.log('[ExcludedLibraries] Configuration loaded:', config);
+                        ExcludedLibrariesConfig.currentConfig = config;
+                        ExcludedLibrariesConfig.renderSections();
+                        Dashboard.hideLoadingMsg();
+                    }).catch(function(error) {
+                        console.error('[ExcludedLibraries] Error loading configuration:', error);
+                        Dashboard.hideLoadingMsg();
+                    });
+                },
+                
+                renderSections: function() {
+                    var container = document.getElementById('sectionsContainer');
+                    container.innerHTML = '';
+                    
+                    var sections = this.currentConfig.Sections || [];
+                    
+                    if (sections.length === 0) {
+                        container.innerHTML = '<p style="color: #999;">No sections configured. Click "Add New Section" to create one.</p>';
+                        return;
+                    }
+                    
+                    sections.forEach(function(section) {
+                        var card = document.createElement('div');
+                        card.className = 'section-card';
+                        card.innerHTML = ExcludedLibrariesConfig.renderSectionCard(section);
+                        container.appendChild(card);
+                    });
+                    
+                    // Attach event listeners after rendering
+                    sections.forEach(function(section) {
+                        ExcludedLibrariesConfig.attachSectionListeners(section.Id);
+                    });
+                },
+                
+                renderSectionCard: function(section) {
+                    var contentTypes = [];
+                    if (section.IncludeMovies) contentTypes.push('Movies');
+                    if (section.IncludeSeries) contentTypes.push('TV Series');
+                    if (section.IncludeMusic) contentTypes.push('Music');
+                    
+                    var contentTypesText = contentTypes.length > 0 ? contentTypes.join(', ') : 'None';
+                    
+                    var html = '<div class="section-header">';
+                    html += '<div class="section-title">' + (section.DisplayName || 'Untitled Section') + '</div>';
+                    html += '<div class="button-group">';
+                    html += '<button is="emby-button" type="button" class="edit-section-btn raised" data-section-id="' + section.Id + '">';
+                    html += '<span>Edit</span>';
+                    html += '</button>';
+                    html += '<button is="emby-button" type="button" class="delete-section-btn raised button-cancel" data-section-id="' + section.Id + '">';
+                    html += '<span>Delete</span>';
+                    html += '</button>';
+                    html += '</div>';
+                    html += '</div>';
+                    html += '<div class="section-details">';
+                    html += 'Media Types: ' + contentTypesText + ' | ';
+                    html += 'Sort: ' + (section.SortBy || 'DateCreated') + (section.SortDescending ? ' (Descending)' : '');
+                    html += '</div>';
+                    html += '<div class="edit-form" id="edit-form-' + section.Id + '">';
+                    html += ExcludedLibrariesConfig.renderEditForm(section);
+                    html += '</div>';
+                    
+                    return html;
+                },
+                
+                renderEditForm: function(section) {
+                    var html = '<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">';
+                    html += '<div class="inputContainer">';
+                    html += '<label class="inputLabel" for="name-' + section.Id + '">Section Name:</label>';
+                    html += '<input is="emby-input" type="text" id="name-' + section.Id + '" value="' + (section.DisplayName || '') + '" />';
+                    html += '</div>';
+                    
+                    html += '<div class="verticalSection">';
+                    html += '<h4>Media Types to Include</h4>';
+                    html += '<p style="color: #999; font-size: 0.9em; margin-bottom: 10px;">Select which media types to show. Items without valid files are automatically filtered out.</p>';
+                    html += '<div class="checkboxContainer"><label>';
+                    html += '<input is="emby-checkbox" type="checkbox" id="movies-' + section.Id + '" ' + (section.IncludeMovies ? 'checked' : '') + '/>';
+                    html += '<span>Movies</span></label></div>';
+                    html += '<div class="checkboxContainer"><label>';
+                    html += '<input is="emby-checkbox" type="checkbox" id="series-' + section.Id + '" ' + (section.IncludeSeries ? 'checked' : '') + '/>';
+                    html += '<span>TV Series</span></label></div>';
+                    html += '<div class="checkboxContainer"><label>';
+                    html += '<input is="emby-checkbox" type="checkbox" id="music-' + section.Id + '" ' + (section.IncludeMusic ? 'checked' : '') + '/>';
+                    html += '<span>Music Albums</span></label></div>';
+                    html += '</div>';
+                    
+                    html += '<div class="verticalSection">';
+                    html += '<h4>Sorting</h4>';
+                    html += '<div class="selectContainer">';
+                    html += '<select is="emby-select" id="sortby-' + section.Id + '">';
+                    html += '<option value="DateCreated"' + (section.SortBy === 'DateCreated' ? ' selected' : '') + '>Date Added</option>';
+                    html += '<option value="DatePlayed"' + (section.SortBy === 'DatePlayed' ? ' selected' : '') + '>Date Played</option>';
+                    html += '<option value="PremiereDate"' + (section.SortBy === 'PremiereDate' ? ' selected' : '') + '>Release Date</option>';
+                    html += '<option value="Name"' + (section.SortBy === 'Name' ? ' selected' : '') + '>Name</option>';
+                    html += '<option value="Random"' + (section.SortBy === 'Random' ? ' selected' : '') + '>Random</option>';
+                    html += '</select>';
+                    html += '</div>';
+                    html += '<div class="checkboxContainer"><label>';
+                    html += '<input is="emby-checkbox" type="checkbox" id="desc-' + section.Id + '" ' + (section.SortDescending ? 'checked' : '') + '/>';
+                    html += '<span>Descending (Newest First)</span></label></div>';
+                    html += '</div>';
+                    
+                    html += '<div class="button-group" style="margin-top: 15px;">';
+                    html += '<button is="emby-button" type="button" class="save-section-btn raised button-submit" data-section-id="' + section.Id + '">';
+                    html += '<span>Save Changes</span>';
+                    html += '</button>';
+                    html += '<button is="emby-button" type="button" class="cancel-edit-btn raised" data-section-id="' + section.Id + '">';
+                    html += '<span>Cancel</span>';
+                    html += '</button>';
+                    html += '</div>';
+                    html += '</div>';
+                    
+                    return html;
+                },
+                
+                attachSectionListeners: function(sectionId) {
+                    var editBtn = document.querySelector('.edit-section-btn[data-section-id="' + sectionId + '"]');
+                    var deleteBtn = document.querySelector('.delete-section-btn[data-section-id="' + sectionId + '"]');
+                    var saveBtn = document.querySelector('.save-section-btn[data-section-id="' + sectionId + '"]');
+                    var cancelBtn = document.querySelector('.cancel-edit-btn[data-section-id="' + sectionId + '"]');
+                    
+                    if (editBtn) {
+                        editBtn.addEventListener('click', function() {
+                            ExcludedLibrariesConfig.toggleEditForm(sectionId);
+                        });
+                    }
+                    
+                    if (deleteBtn) {
+                        deleteBtn.addEventListener('click', function() {
+                            ExcludedLibrariesConfig.deleteSection(sectionId);
+                        });
+                    }
+                    
+                    if (saveBtn) {
+                        saveBtn.addEventListener('click', function() {
+                            ExcludedLibrariesConfig.saveSection(sectionId);
+                        });
+                    }
+                    
+                    if (cancelBtn) {
+                        cancelBtn.addEventListener('click', function() {
+                            ExcludedLibrariesConfig.toggleEditForm(sectionId);
+                        });
+                    }
+                },
+                
+                toggleEditForm: function(sectionId) {
+                    var form = document.getElementById('edit-form-' + sectionId);
+                    if (form) {
+                        form.classList.toggle('active');
+                    }
+                },
+                
+                addNewSection: function() {
+                    console.log('[ExcludedLibraries] Opening new section form');
+                    
+                    this.newSectionData = {
+                        Id: this.generateId(),
+                        DisplayName: 'New Section',
+                        IncludeMovies: true,
+                        IncludeSeries: true,
+                        IncludeMusic: false,
+                        SortBy: 'DateCreated',
+                        SortDescending: true
+                    };
+                    
+                    this.showNewSectionForm();
+                },
+                
+                showNewSectionForm: function() {
+                    var form = document.getElementById('newSectionForm');
+                    var content = document.getElementById('newSectionFormContent');
+                    
+                    content.innerHTML = this.renderNewSectionForm(this.newSectionData);
+                    form.style.display = 'block';
+                    
+                    // Attach listeners for the new section form
+                    this.attachNewSectionListeners(this.newSectionData.Id);
+                },
+                
+                renderNewSectionForm: function(section) {
+                    var html = '<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">';
+                    html += '<div class="inputContainer">';
+                    html += '<label class="inputLabel" for="new-name">Section Name:</label>';
+                    html += '<input is="emby-input" type="text" id="new-name" value="' + section.DisplayName + '" />';
+                    html += '</div>';
+                    
+                    html += '<div class="verticalSection">';
+                    html += '<h4>Media Types to Include</h4>';
+                    html += '<p style="color: #999; font-size: 0.9em; margin-bottom: 10px;">Select which media types to show. Items without valid files are automatically filtered out.</p>';
+                    html += '<div class="checkboxContainer"><label>';
+                    html += '<input is="emby-checkbox" type="checkbox" id="new-movies" checked/>';
+                    html += '<span>Movies</span></label></div>';
+                    html += '<div class="checkboxContainer"><label>';
+                    html += '<input is="emby-checkbox" type="checkbox" id="new-series" checked/>';
+                    html += '<span>TV Series</span></label></div>';
+                    html += '<div class="checkboxContainer"><label>';
+                    html += '<input is="emby-checkbox" type="checkbox" id="new-music"/>';
+                    html += '<span>Music Albums</span></label></div>';
+                    html += '</div>';
+                    
+                    html += '<div class="verticalSection">';
+                    html += '<h4>Sorting</h4>';
+                    html += '<div class="selectContainer">';
+                    html += '<select is="emby-select" id="new-sortby">';
+                    html += '<option value="DateCreated" selected>Date Added</option>';
+                    html += '<option value="DatePlayed">Date Played</option>';
+                    html += '<option value="PremiereDate">Release Date</option>';
+                    html += '<option value="Name">Name</option>';
+                    html += '<option value="Random">Random</option>';
+                    html += '</select>';
+                    html += '</div>';
+                    html += '<div class="checkboxContainer"><label>';
+                    html += '<input is="emby-checkbox" type="checkbox" id="new-desc" checked/>';
+                    html += '<span>Descending (Newest First)</span></label></div>';
+                    html += '</div>';
+                    
+                    html += '<div class="button-group" style="margin-top: 15px;">';
+                    html += '<button is="emby-button" type="button" id="createSectionBtn" class="raised button-submit">';
+                    html += '<span>Create Section</span>';
+                    html += '</button>';
+                    html += '<button is="emby-button" type="button" id="cancelNewSectionBtn" class="raised">';
+                    html += '<span>Cancel</span>';
+                    html += '</button>';
+                    html += '</div>';
+                    html += '</div>';
+                    
+                    return html;
+                },
+                
+                attachNewSectionListeners: function(sectionId) {
+                    var createBtn = document.getElementById('createSectionBtn');
+                    var cancelBtn = document.getElementById('cancelNewSectionBtn');
+                    
+                    if (createBtn) {
+                        createBtn.addEventListener('click', function() {
+                            ExcludedLibrariesConfig.createNewSection();
+                        });
+                    }
+                    
+                    if (cancelBtn) {
+                        cancelBtn.addEventListener('click', function() {
+                            ExcludedLibrariesConfig.cancelNewSection();
+                        });
+                    }
+                },
+                
+                createNewSection: function() {
+                    console.log('[ExcludedLibraries] Creating new section');
+                    
+                    // Get form values
+                    this.newSectionData.DisplayName = document.getElementById('new-name').value;
+                    this.newSectionData.IncludeMovies = document.getElementById('new-movies').checked;
+                    this.newSectionData.IncludeSeries = document.getElementById('new-series').checked;
+                    this.newSectionData.IncludeMusic = document.getElementById('new-music').checked;
+                    this.newSectionData.SortBy = document.getElementById('new-sortby').value;
+                    this.newSectionData.SortDescending = document.getElementById('new-desc').checked;
+                    
+                    console.log('[ExcludedLibraries] New section data:', this.newSectionData);
+                    
+                    // Add to config
+                    this.currentConfig.Sections = this.currentConfig.Sections || [];
+                    this.currentConfig.Sections.push(this.newSectionData);
+                    
+                    // Save configuration
+                    Dashboard.showLoadingMsg();
+                    ApiClient.updatePluginConfiguration(this.pluginUniqueId, this.currentConfig).then(function() {
+                        console.log('[ExcludedLibraries] Configuration saved');
+                        Dashboard.hideLoadingMsg();
+                        Dashboard.alert({
+                            message: 'Section "' + ExcludedLibrariesConfig.newSectionData.DisplayName + '" created!\n\nRestart Jellyfin (or run the "Excluded Libraries - Register Home Sections" task) to register it, then enable it in Modular Home settings.',
+                            title: 'Success'
+                        });
+                        ExcludedLibrariesConfig.cancelNewSection();
+                        ExcludedLibrariesConfig.renderSections();
+                    }).catch(function(error) {
+                        Dashboard.hideLoadingMsg();
+                        console.error('[ExcludedLibraries] Error creating:', error);
+                        Dashboard.alert('Error creating section');
+                    });
+                },
+                
+                cancelNewSection: function() {
+                    console.log('[ExcludedLibraries] Cancelled new section');
+                    document.getElementById('newSectionForm').style.display = 'none';
+                    this.newSectionData = null;
+                },
+                
+                saveSection: function(sectionId) {
+                    console.log('[ExcludedLibraries] Saving section:', sectionId);
+                    var section = this.currentConfig.Sections.find(function(s) { return s.Id === sectionId; });
+                    if (!section) return;
+                    
+                    // Update section with form values
+                    section.DisplayName = document.getElementById('name-' + sectionId).value;
+                    section.IncludeMovies = document.getElementById('movies-' + sectionId).checked;
+                    section.IncludeSeries = document.getElementById('series-' + sectionId).checked;
+                    section.IncludeMusic = document.getElementById('music-' + sectionId).checked;
+                    section.SortBy = document.getElementById('sortby-' + sectionId).value;
+                    section.SortDescending = document.getElementById('desc-' + sectionId).checked;
+                    
+                    console.log('[ExcludedLibraries] Updated section config:', section);
+                    
+                    // Save configuration
+                    Dashboard.showLoadingMsg();
+                    ApiClient.updatePluginConfiguration(this.pluginUniqueId, this.currentConfig).then(function() {
+                        console.log('[ExcludedLibraries] Configuration saved');
+                        Dashboard.hideLoadingMsg();
+                        Dashboard.alert({
+                            message: 'Section "' + section.DisplayName + '" saved!\n\nRestart Jellyfin (or run the "Excluded Libraries - Register Home Sections" task) to register it, then enable it in Modular Home settings.',
+                            title: 'Success'
+                        });
+                        ExcludedLibrariesConfig.renderSections();
+                    }).catch(function(error) {
+                        Dashboard.hideLoadingMsg();
+                        console.error('[ExcludedLibraries] Error saving:', error);
+                        Dashboard.alert('Error saving section');
+                    });
+                },
+                
+                deleteSection: function(sectionId) {
+                    var section = this.currentConfig.Sections.find(function(s) { return s.Id === sectionId; });
+                    if (!section) return;
+                    
+                    if (!confirm('Delete section "' + section.DisplayName + '"?\n\nRestart Jellyfin to unregister it from Home Screen Sections.')) return;
+                    
+                    console.log('[ExcludedLibraries] Deleting section:', sectionId);
+                    this.currentConfig.Sections = this.currentConfig.Sections.filter(function(s) { return s.Id !== sectionId; });
+                    
+                    Dashboard.showLoadingMsg();
+                    ApiClient.updatePluginConfiguration(this.pluginUniqueId, this.currentConfig).then(function() {
+                        Dashboard.hideLoadingMsg();
+                        Dashboard.alert('Section deleted. Restart Jellyfin to complete removal from Home Screen Sections.');
+                        ExcludedLibrariesConfig.renderSections();
+                    }).catch(function(error) {
+                        Dashboard.hideLoadingMsg();
+                        console.error('[ExcludedLibraries] Error deleting:', error);
+                    });
+                },
+                
+                generateId: function() {
+                    return 'section_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                }
+            };
+            
+            // Initialize when page loads
+            document.getElementById('ExcludedLibrariesConfigPage').addEventListener('pageshow', function() {
+                ExcludedLibrariesConfig.init();
+            });
+        </script>
+    </div>
+</body>
+</html>

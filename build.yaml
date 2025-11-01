@@ -1,0 +1,368 @@
+---
+name: "Jellyfin.Plugin.ExcludedLibraries"
+guid: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+version: "3.1.0.0"
+targetAbi: "10.10.0.0"
+framework: "net8.0"
+owner: "shaheer"
+overview: "Create home sections excluding specific libraries"
+description: >
+  This plugin integrates with the Home Screen Sections plugin to create custom
+  sections that display content while excluding specific libraries. Perfect for
+  filtering out kids content, documentaries, or any other libraries you want to
+  keep separate from your main home screen sections.
+category: "General"
+artifacts:
+  - "Jellyfin.Plugin.ExcludedLibraries.dll"
+  changelog: >
+    ## 3.1.0
+    ### Performance - Massive Improvement!
+    - **BREAKTHROUGH**: Completely eliminated N+1 query problem
+    - Now makes ONE recursive query for all Episodes/Movies/Tracks instead of querying each Series separately
+    - Groups files by parent Series/Album to determine which have valid content
+    - Performance improvement: ~100x faster (from seconds to milliseconds)
+    - No more per-series child queries - the original user suggestion was correct!
+    
+    ## 3.0.6
+    ### Diagnostics
+    - Added detailed timing logs to identify performance bottlenecks
+    - Shows total filter time, child query time, query count, and average time per query
+    - Helps diagnose what's causing slowness in the filtering process
+    
+    ## 3.0.5
+    ### Performance
+    - **CRITICAL**: Fixed early termination logic to stop after collecting 20 items
+    - Now only validates enough series to get 20 results instead of ALL series
+    - For 200-item queries, validation now stops after ~20-30 items instead of all 200
+    - This is the actual performance fix that makes it fast
+    
+    ## 3.0.4
+    ### Performance
+    - **MAJOR**: Dramatically improved performance for Series/Album validation
+    - Cached reflection method lookup (no longer looking up method for every series)
+    - Query optimization: Only fetch 1 child item instead of all episodes/tracks
+    - Series validation is now ~100x faster for large libraries
+    
+    ## 3.0.3
+    ### Bug Fixes
+    - **CRITICAL**: Fixed MissingMethodException in child item validation
+    - Child validation now uses reflection for GetItemList (Jellyfin 10.11 compatibility)
+    - Enhanced error handling and logging for child validation failures
+    
+    ## 3.0.2
+    ### Enhancements
+    - Added deep file validation for Series and Music Albums
+    - Now checks child items (episodes/tracks) to ensure they have valid file sizes
+    - Series/Albums with no valid children are filtered out automatically
+    - Added sectionId prefix to all logs in GetFilteredItems for easier debugging
+    - Improved logging for filtered container items
+    
+    ## 3.0.1
+    ### Bug Fixes
+    - **CRITICAL**: Fixed Series and Music Albums not showing up
+    - Removed `IsFolder = false` constraint that was excluding container items (Series, MusicAlbum)
+    - File size check now only applies to Movies (Series and MusicAlbum are containers with no size)
+    - All media types now work correctly
+    
+    ## 3.0.0
+    ### Major Changes
+    - **BREAKING**: Completely simplified filtering approach
+    - Now filters by media type (Movies, Series, Music) and file size only
+    - Removed complex library hierarchy traversal logic
+    - Items with null or zero file size are automatically excluded
+    - Much more reliable and performant filtering
+    - Configuration now focuses on media types instead of library exclusions
+    
+    ## 2.0.26
+    ### Enhancements
+    - Additional debugging and refinements
+    
+    ## 2.0.25
+    ### Enhancements
+    - Added null check for Size property with early return for debugging
+    
+    ## 2.0.24
+    ### Bug Fixes
+    - **CRITICAL**: Fixed logging parameter mismatch that was causing logs to stop after ProviderIds
+    - Improved ProviderIds iteration with proper error handling and type casting
+    - Added defensive logging to track where property iteration stops
+    
+    ## 2.0.23
+    ### Enhancements
+    - Further debugging improvements for library structure analysis
+    
+    ## 2.0.22
+    ### Enhancements
+    - Additional debugging enhancements for object structure analysis
+    
+    ## 2.0.21
+    ### Enhancements
+    - Added special handling for Children property to log all child items
+    - When Children property is detected, iterates and logs each child with ID and type
+    - Helps identify library structure through child relationships
+    
+    ## 2.0.20
+    ### Enhancements
+    - Added logging for LinkedChildren of topParent object
+    - Logs each child with ID, type, and all properties
+    - Helps identify if library information is stored in child relationships
+    
+    ## 2.0.19
+    ### Enhancements
+    - Added comprehensive property logging for GetTopParent() object using reflection
+    - Logs all public properties of topParent to help identify where library ID is stored
+    - Helps diagnose library structure and find the correct property for matching
+    
+    ## 2.0.18
+    ### Enhancements
+    - Added third level parent check (topParentParentParent) for edge cases
+    - Now checks up to 3 levels from GetTopParent() to find CollectionFolder
+    - Additional logging for parent hierarchy traversal
+    
+    ## 2.0.17
+    ### Bug Fixes
+    - **CRITICAL**: Fixed library exclusion by checking GetTopParent()'s parent
+    - GetTopParent() returns the physical Folder, not the CollectionFolder library
+    - Now checks one level up from GetTopParent() to find the actual CollectionFolder
+    - This should finally match items to their correct library for exclusion
+    
+    ## 2.0.16
+    ### Enhancements
+    - Added GetTopParent() check as primary method for library matching
+    - Enhanced logging to show all library IDs and types when fetching libraries
+    - Now logs what GetTopParent() returns for each item to help diagnose ID mismatches
+    - Should properly match items to their parent library
+    
+    ## 2.0.15
+    ### Bug Fixes
+    - **CRITICAL**: Fixed library exclusion not working - now checks parent node when reaching AggregateFolder
+    - Previously stopped traversal one level too early (at physical folder, not library folder)
+    - Added parent type logging to help debug hierarchy traversal
+    
+    ## 2.0.14
+    ### Enhancements
+    - Added comprehensive logging to IsItemInExcludedLibrary function for debugging
+    - Now logs each item being checked with its ID
+    - Shows parent chain traversal with IDs and types at each level
+    - Clear match/no-match indicators to track filtering logic
+    
+    ## 2.0.13
+  
+  ### Enhancements
+  - Improved logging clarity for library exclusion
+  - Now shows actual matched library names being excluded (not just configured names)
+  - Added warning log for configured libraries that don't exist
+  - Makes it clear when "Live TV" or other non-existent libraries are configured
+  
+  ## 2.0.12
+  
+  ### Bug Fixes
+  - **CRITICAL**: Fixed GetBaseItemDto to support 4-parameter signature in Jellyfin 10.11
+  - Now checks for both 3-parameter (10.10) and 4-parameter (10.11) versions
+  - Passes null for the 4th "owner" parameter when using 4-parameter version
+  - Plugin now fully compatible with Jellyfin 10.11's new DTO service API
+  
+  ## 2.0.11
+  
+  ### Bug Fixes
+  - **CRITICAL**: Improved GetBaseItemDto method discovery with multiple fallback strategies
+  - Added detailed logging of all available method signatures for debugging
+  - Uses flexible type name matching instead of strict type equality
+  - Falls back to any 3-parameter method if exact match not found
+  
+  ## 2.0.10
+  
+  ### Enhancements
+  - **PROACTIVE**: Added reflection for IDtoService.GetBaseItemDto to prevent future compatibility issues
+  - All three major API calls now use reflection (GetUserById, GetItemList, GetBaseItemDto)
+  - Added comprehensive logging for method discovery and DTO conversion
+  - Improved error handling with item-by-item DTO conversion to skip problematic items
+  
+  ## 2.0.9
+  
+  ### Bug Fixes
+  - **CRITICAL**: Fixed ILibraryManager.GetItemList method binding using reflection
+  - Used reflection to invoke GetItemList at runtime to handle signature changes
+  - Added handling for different return types (List vs IReadOnlyList)
+  - All major Jellyfin API calls now use reflection for 10.10/10.11 compatibility
+  
+  ## 2.0.8
+  
+  ### Bug Fixes
+  - **CRITICAL**: Fixed IUserManager.GetUserById method binding using reflection
+  - Used reflection to invoke GetUserById at runtime instead of compile-time binding
+  - This prevents MissingMethodException on Jellyfin 10.11
+  - Dynamic typing now used for User object throughout the query pipeline
+  
+  ## 2.0.7
+  
+  ### Bug Fixes
+  - **CRITICAL**: Fixed IUserManager.GetUserById compatibility issue between Jellyfin 10.10 and 10.11
+  - Used dynamic typing to handle User object differences between versions
+  - Added error handling for user retrieval
+  
+  ## 2.0.6
+  
+  ### Bug Fixes
+  - **CRITICAL**: Fixed Jellyfin 10.11 compatibility issue with SortOrder enum
+  - Removed dependency on SortOrder enum by implementing manual LINQ sorting
+  - Plugin now compatible with both Jellyfin 10.10 and 10.11
+  
+  ## 2.0.5
+  
+  ### Enhancements
+  - Changed all debug logs to information logs for better visibility
+  
+  ## 2.0.4
+  
+  ### Enhancements
+  - Added comprehensive debug logging throughout the entire flow:
+    * Detailed logs in StartupService for registration process
+    * Extensive logs in HomeScreenSectionsHandler when GetResults is called
+    * Detailed logs in ExcludedLibrariesSection for filtering logic
+  - Added payload details in registration logs
+  - Added validation and error logs with clear markers (✓/✗)
+  - All logs prefixed with [ExcludedLibraries] for easy filtering
+  
+  ## 2.0.3
+  
+  ### Maintenance
+  - Version increment
+  
+  ## 2.0.2
+  
+  ### Bug Fixes
+  - **CRITICAL**: Fixed StartupService not being registered, causing sections to never register with Home Screen Sections
+  - Added IScheduledTask registration in PluginServiceRegistrator
+  
+  ## 2.0.1
+  
+  ### Bug Fixes
+  - Fixed JavaScript error when creating new sections (removed call to deleted registerSection function)
+  - Improved user messages to consistently mention restart requirement
+  
+  ## 2.0.0
+  
+  **MAJOR UPDATE**: Migrated from HTTP endpoint registration to C# Reflection approach
+  
+  ### Breaking Changes
+  - Sections now register automatically on Jellyfin startup (restart required after changes)
+  - Old HTTP registration approach replaced with reflection-based integration
+  
+  ### New Features
+  - Added StartupService for automatic section registration
+  - Added HomeScreenSectionsHandler for reflection-based results
+  - Improved performance (no HTTP overhead)
+  - Better reliability (no network/authentication issues)
+  - Added scheduled task: "Excluded Libraries - Register Home Sections"
+  
+  ### Improvements
+  - Updated UI with helpful info banner explaining registration process
+  - Better error messages and logging
+  - Simplified save/delete flows
+  - Added comprehensive documentation (REFLECTION_INTEGRATION.md)
+  - Added upgrade guide (UPGRADE_GUIDE.md)
+  
+  ### Technical Changes
+  - Added Newtonsoft.Json dependency
+  - Uses reflection to register with Home Screen Sections
+  - Follows same pattern as HSS plugin's built-in sections
+  - Automatic migration on upgrade (just restart)
+  
+  ## 1.2.3
+  
+  - **FIXED**: Restored proper resultsEndpoint registration approach
+  - Removed invalid originalPayload field (doesn't exist in Home Screen Sections API)
+  - Set route to empty string (generic sections don't need specific routes)
+  - Sections now properly use HTTP endpoint approach as documented
+  
+  ## 1.2.2
+  
+  - Updated section registration to use originalPayload instead of resultsEndpoint
+  - Modified registration approach for better compatibility
+  
+  ## 1.2.1
+  
+  - Fixed "No parameterless constructor" error by creating separate PluginServiceRegistrator class
+  - Service registration now works correctly with Jellyfin's DI system
+  
+  ## 1.2.0
+  
+  - **CRITICAL FIX**: Registered ExcludedLibrariesSection with DI container
+  - Fixed "Unable to resolve service" error when calling API endpoints
+  - Plugin now properly initializes and serves filtered content
+  - Removed unnecessary urlName field from registration
+  
+  ## 1.1.9
+  
+  - **CRITICAL FIX**: Added missing urlName field to registration payload
+  - Set route to empty string (generic, no hardcoded library IDs)
+  - Sections should now properly appear in Home Screen Sections
+  
+  ## 1.1.8
+  
+  - Updated section registration with static route configuration
+  
+  ## 1.1.7
+  
+  - Fixed section registration with proper base URL using System/Info endpoint
+  - Added required urlName and route fields for Home Screen Sections compatibility
+  - Fixed "Url name cannot be empty" error
+  
+  ## 1.1.6
+  
+  - Fixed library display to show library names instead of [object object]
+  - Libraries now properly display and save by name
+  
+  ## 1.1.5
+  
+  - Refactored library loading to store in allLibraries array
+  - Improved library fetching and error handling
+  
+  ## 1.1.4
+  
+  - Fixed getCurrentUserId call with proper parameter
+  
+  ## 1.1.3
+  
+  - Configuration updates and improvements
+  
+  ## 1.1.2
+  
+  - **Improved new section UX**: Sections only appear in the list after they're created
+  - Cancel button now properly dismisses the creation form
+  - Separate creation form prevents confusion with unsaved sections
+  
+  ## 1.1.1
+  
+  - Fixed template literal rendering issue (compatibility with older JavaScript)
+  - New sections now automatically open for editing
+  - Improved HTML rendering for all UI elements
+  
+  ## 1.1.0
+  
+  - **Multiple sections support!** Create as many filtered sections as you want
+  - Removed maxItems requirement - sections automatically show 20 items
+  - New card-based UI for managing sections
+  - Each section has its own settings and excluded libraries
+  - Add, edit, and delete sections independently
+  
+  ## 1.0.2
+  
+  - Added comprehensive logging with [ExcludedLibraries] prefix
+  - Added version display in config UI
+  - Improved debugging capabilities
+  
+  ## 1.0.1
+  
+  - Added auto-registration with Home Screen Sections
+  - Fixed ItemFields compatibility issue
+  
+  ## 1.0.0
+  
+  - Initial release
+  - Support for excluding multiple libraries
+  - Configurable content types (Movies, TV Series, Music)
+  - Multiple sorting options
+  - Easy configuration through Jellyfin dashboard
+

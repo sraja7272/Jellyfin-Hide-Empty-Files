@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Jellyfin.Plugin.ExcludedLibraries</AssemblyName>
+    <RootNamespace>Jellyfin.Plugin.ExcludedLibraries</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <Version>3.1.0.0</Version>
+    <AssemblyVersion>3.1.0.0</AssemblyVersion>
+    <FileVersion>3.1.0.0</FileVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Jellyfin.Controller" Version="10.10.*" />
+    <PackageReference Include="Jellyfin.Model" Version="10.10.*" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Configuration\*.xml" />
+    <None Remove="Configuration\*.html" />
+    <EmbeddedResource Include="Configuration\*.xml" />
+    <EmbeddedResource Include="Configuration\*.html" />
+  </ItemGroup>
+
+</Project>
+
