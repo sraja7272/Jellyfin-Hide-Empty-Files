@@ -8,6 +8,14 @@
         "category": "General",
         "versions": [
             {
+                "version": "1.4.0.0",
+                "changelog": "- Enhance release script to append new version entries to manifest.json\n- Release v1.3.0",
+                "targetAbi": "10.10.0.0",
+                "sourceUrl": "https://github.com/sraja7272/Jellyfin-Hide-Empty-Files/releases/download/v1.4.0/jellyfin-plugin-excludedlibraries_1.4.0.zip",
+                "checksum": "44a3af965ef2b9eb5f11de53314cc68e",
+                "timestamp": "2026-01-07T05:11:50Z"
+            },
+            {
                 "version": "1.3.0.0",
                 "changelog": "Testing New Release Script",
                 "targetAbi": "10.10.0.0",
