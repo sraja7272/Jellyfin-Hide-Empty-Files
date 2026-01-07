@@ -8,6 +8,40 @@ REPO="sraja7272/Jellyfin-Hide-Empty-Files"
 DLL_PATH="src/bin/Release/net8.0/Jellyfin.Plugin.ExcludedLibraries.dll"
 MANIFEST_FILE="manifest.json"
 
+# Function to get release notes
+get_release_notes() {
+    if [ -n "$CI" ]; then
+        # CI mode - get commit messages since last tag
+        echo "Fetching commit messages since $LATEST_TAG..." >&2
+        if git rev-parse "$LATEST_TAG" >/dev/null 2>&1; then
+            # Get commits since the last tag
+            COMMIT_MESSAGES=$(git log "${LATEST_TAG}..HEAD" --pretty=format:"- %s" 2>/dev/null || echo "")
+            
+            # Use commit messages as release notes, or fallback to default
+            if [ -n "$COMMIT_MESSAGES" ]; then
+                echo "$COMMIT_MESSAGES"
+            else
+                echo "Release $TAG"
+            fi
+        else
+            echo "Release $TAG"
+        fi
+    else
+        # Interactive mode (local execution)
+        echo "Enter release notes (press Ctrl+D when done):" >&2
+        echo "--------------------------------------------" >&2
+        local notes=$(cat)
+        echo "" >&2
+        
+        # If no release notes provided, use a default message
+        if [ -z "$notes" ]; then
+            echo "Release $TAG"
+        else
+            echo "$notes"
+        fi
+    fi
+}
+
 echo "=== Jellyfin Plugin Release Automation ==="
 echo ""
 
@@ -41,6 +75,14 @@ echo ""
 # Show what will be released
 echo "=== Release Summary ==="
 echo "Version: $TAG"
+echo ""
+
+# Get release notes for preview
+RELEASE_NOTES=$(get_release_notes)
+echo "Release Notes:"
+echo "--------------------------------------------"
+echo "$RELEASE_NOTES"
+echo "--------------------------------------------"
 echo ""
 
 # Check for preview mode
@@ -139,38 +181,8 @@ fi
 echo "ZIP MD5: $ZIP_CHECKSUM"
 echo ""
 
-# Get release notes
-if [ -n "$CI" ]; then
-    # CI mode - get commit messages since last tag
-    echo "Fetching commit messages since $LATEST_TAG..."
-    if git rev-parse "$LATEST_TAG" >/dev/null 2>&1; then
-        # Get commits since the last tag
-        COMMIT_MESSAGES=$(git log "${LATEST_TAG}..HEAD" --pretty=format:"- %s" 2>/dev/null || echo "")
-        
-        # Use commit messages as release notes, or fallback to default
-        if [ -n "$COMMIT_MESSAGES" ]; then
-            RELEASE_NOTES="$COMMIT_MESSAGES"
-            echo "✓ Found commit messages for release notes"
-        else
-            RELEASE_NOTES="Release $TAG"
-            echo "⚠ No commits found, using default release notes"
-        fi
-    else
-        RELEASE_NOTES="Release $TAG"
-        echo "⚠ Tag not found, using default release notes"
-    fi
-else
-    # Interactive mode (local execution)
-    echo "Enter release notes (press Ctrl+D when done):"
-    echo "--------------------------------------------"
-    RELEASE_NOTES=$(cat)
-    echo ""
-    
-    # If no release notes provided, use a default message
-    if [ -z "$RELEASE_NOTES" ]; then
-        RELEASE_NOTES="Release $TAG"
-    fi
-fi
+# Get release notes (for actual release)
+RELEASE_NOTES=$(get_release_notes)
 
 # Create GitHub release
 echo "Creating GitHub release $TAG..."
