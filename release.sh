@@ -181,6 +181,37 @@ if ! gh auth status &> /dev/null; then
     exit 1
 fi
 
+# Update version numbers in source files BEFORE building
+echo "Updating version numbers in project files..."
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    # Update .csproj file
+    sed -i '' "s/<Version>[^<]*<\/Version>/<Version>${VERSION}.0<\/Version>/" src/Jellyfin.Plugin.ExcludedLibraries.csproj
+    sed -i '' "s/<AssemblyVersion>[^<]*<\/AssemblyVersion>/<AssemblyVersion>${VERSION}.0<\/AssemblyVersion>/" src/Jellyfin.Plugin.ExcludedLibraries.csproj
+    sed -i '' "s/<FileVersion>[^<]*<\/FileVersion>/<FileVersion>${VERSION}.0<\/FileVersion>/" src/Jellyfin.Plugin.ExcludedLibraries.csproj
+    
+    # Update Plugin.cs
+    sed -i '' "s/Version [0-9.]*/Version ${VERSION}/" src/Plugin.cs
+    
+    # Update configPage.html
+    sed -i '' "s/v[0-9.]*<\/span>/v${VERSION}<\/span>/" src/Configuration/configPage.html
+    sed -i '' "s/version: '[0-9.]*'/version: '${VERSION}'/" src/Configuration/configPage.html
+else
+    # Linux
+    sed -i "s/<Version>[^<]*<\/Version>/<Version>${VERSION}.0<\/Version>/" src/Jellyfin.Plugin.ExcludedLibraries.csproj
+    sed -i "s/<AssemblyVersion>[^<]*<\/AssemblyVersion>/<AssemblyVersion>${VERSION}.0<\/AssemblyVersion>/" src/Jellyfin.Plugin.ExcludedLibraries.csproj
+    sed -i "s/<FileVersion>[^<]*<\/FileVersion>/<FileVersion>${VERSION}.0<\/FileVersion>/" src/Jellyfin.Plugin.ExcludedLibraries.csproj
+    
+    sed -i "s/Version [0-9.]*/Version ${VERSION}/" src/Plugin.cs
+    
+    sed -i "s/v[0-9.]*<\/span>/v${VERSION}<\/span>/" src/Configuration/configPage.html
+    sed -i "s/version: '[0-9.]*'/version: '${VERSION}'/" src/Configuration/configPage.html
+fi
+
+echo "✓ Version numbers updated in source files!"
+echo ""
+
 # Build the plugin
 echo "Building plugin..."
 
@@ -277,38 +308,10 @@ echo ""
 # Clean up ZIP file
 rm -f "$ZIP_PATH"
 
-# Update version numbers in all files
-echo "Updating version numbers in project files..."
-
-# Update manifest.json - add new version entry
+# Update manifest.json - add new version entry (needs ZIP checksum)
+echo "Updating manifest.json with new version entry..."
 update_manifest_json "$VERSION" "$ZIP_CHECKSUM" "$TAG" "$RELEASE_NOTES" "$MANIFEST_FILE"
-
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    # macOS
-    # Update .csproj file
-    sed -i '' "s/<Version>[^<]*<\/Version>/<Version>${VERSION}.0<\/Version>/" src/Jellyfin.Plugin.ExcludedLibraries.csproj
-    sed -i '' "s/<AssemblyVersion>[^<]*<\/AssemblyVersion>/<AssemblyVersion>${VERSION}.0<\/AssemblyVersion>/" src/Jellyfin.Plugin.ExcludedLibraries.csproj
-    sed -i '' "s/<FileVersion>[^<]*<\/FileVersion>/<FileVersion>${VERSION}.0<\/FileVersion>/" src/Jellyfin.Plugin.ExcludedLibraries.csproj
-    
-    # Update Plugin.cs
-    sed -i '' "s/Version [0-9.]*/Version ${VERSION}/" src/Plugin.cs
-    
-    # Update configPage.html
-    sed -i '' "s/v[0-9.]*<\/span>/v${VERSION}<\/span>/" src/Configuration/configPage.html
-    sed -i '' "s/version: '[0-9.]*'/version: '${VERSION}'/" src/Configuration/configPage.html
-else
-    # Linux
-    sed -i "s/<Version>[^<]*<\/Version>/<Version>${VERSION}.0<\/Version>/" src/Jellyfin.Plugin.ExcludedLibraries.csproj
-    sed -i "s/<AssemblyVersion>[^<]*<\/AssemblyVersion>/<AssemblyVersion>${VERSION}.0<\/AssemblyVersion>/" src/Jellyfin.Plugin.ExcludedLibraries.csproj
-    sed -i "s/<FileVersion>[^<]*<\/FileVersion>/<FileVersion>${VERSION}.0<\/FileVersion>/" src/Jellyfin.Plugin.ExcludedLibraries.csproj
-    
-    sed -i "s/Version [0-9.]*/Version ${VERSION}/" src/Plugin.cs
-    
-    sed -i "s/v[0-9.]*<\/span>/v${VERSION}<\/span>/" src/Configuration/configPage.html
-    sed -i "s/version: '[0-9.]*'/version: '${VERSION}'/" src/Configuration/configPage.html
-fi
-
-echo "✓ Version numbers updated in all files!"
+echo "✓ manifest.json updated!"
 echo ""
 
 # Commit and push all version changes
