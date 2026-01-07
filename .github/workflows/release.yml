@@ -1,0 +1,107 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      confirm_release:
+        description: 'Confirm release after reviewing preview'
+        required: true
+        type: choice
+        options:
+          - 'no'
+          - 'yes'
+        default: 'no'
+
+jobs:
+  check-input:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Show input value
+        run: |
+          echo "Confirm release input: ${{ github.event.inputs.confirm_release }}"
+          if [ "${{ github.event.inputs.confirm_release }}" != "yes" ]; then
+            echo "⚠️ Release will be skipped. Make sure to select 'yes' in the workflow_dispatch inputs."
+          fi
+
+  preview:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Make release script executable
+        run: chmod +x release.sh
+
+      - name: Show release preview
+        run: ./release.sh
+        env:
+          PREVIEW_ONLY: "true"
+
+      - name: Prompt for manual release
+        run: |
+          echo ""
+          echo "═══════════════════════════════════════════════════════════════"
+          echo "📋 PREVIEW COMPLETE - MANUAL ACTION REQUIRED"
+          echo "═══════════════════════════════════════════════════════════════"
+          echo ""
+          echo "Please review the release information above."
+          echo ""
+          echo "To proceed with the release:"
+          echo "1. Go to the Actions tab: https://github.com/${{ github.repository }}/actions"
+          echo "2. Select the 'Release' workflow"
+          echo "3. Click 'Run workflow' button"
+          echo "4. Select 'yes' from the 'Confirm release' dropdown"
+          echo "5. Click 'Run workflow'"
+          echo ""
+          echo "═══════════════════════════════════════════════════════════════"
+
+  release:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: write
+      pull-requests: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Show release preview
+        run: chmod +x release.sh && ./release.sh
+        env:
+          PREVIEW_ONLY: "true"
+
+      - name: Check confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirm_release }}" != "yes" ]; then
+            echo "❌ Release not confirmed. Please re-run the workflow and select 'yes' to proceed."
+            exit 1
+          fi
+          echo "✅ Release confirmed. Proceeding with release..."
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore NuGet packages
+        run: dotnet restore src/Jellyfin.Plugin.ExcludedLibraries.csproj
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+      - name: Run release script
+        run: ./release.sh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
