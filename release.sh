@@ -8,6 +8,65 @@ REPO="sraja7272/Jellyfin-Hide-Empty-Files"
 DLL_PATH="src/bin/Release/net8.0/Jellyfin.Plugin.ExcludedLibraries.dll"
 MANIFEST_FILE="manifest.json"
 
+# Function to update manifest.json with new version entry
+update_manifest_json() {
+    local version="$1"
+    local checksum="$2"
+    local tag="$3"
+    local release_notes="$4"
+    local manifest_file="$5"
+    
+    # Get current timestamp in ISO 8601 format
+    local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    
+    # Create a temporary file for release notes to pass to Python
+    local notes_file=$(mktemp)
+    echo "$release_notes" > "$notes_file"
+    
+    # Create new version entry using Python
+    python3 << EOF
+import json
+import os
+
+version = "$version"
+checksum = "$checksum"
+tag = "$tag"
+timestamp = "$timestamp"
+manifest_file = "$manifest_file"
+notes_file = "$notes_file"
+
+# Read release notes from file
+with open(notes_file, "r") as f:
+    release_notes = f.read().strip()
+
+# Read manifest.json
+with open(manifest_file, "r") as f:
+    manifest = json.load(f)
+
+# Find the plugin entry and add new version to versions array
+for plugin in manifest:
+    if "versions" in plugin:
+        new_version = {
+            "version": version + ".0",
+            "changelog": release_notes,
+            "targetAbi": "10.10.0.0",
+            "sourceUrl": f"https://github.com/sraja7272/Jellyfin-Hide-Empty-Files/releases/download/{tag}/jellyfin-plugin-excludedlibraries_{version}.zip",
+            "checksum": checksum,
+            "timestamp": timestamp
+        }
+        # Add new version at the beginning of the array (most recent first)
+        plugin["versions"].insert(0, new_version)
+
+# Write manifest.json back
+with open(manifest_file, "w") as f:
+    json.dump(manifest, f, indent=4)
+    f.write("\\n")
+
+# Clean up temp file
+os.remove(notes_file)
+EOF
+}
+
 # Function to get release notes
 get_release_notes() {
     if [ -n "$CI" ]; then
@@ -124,9 +183,28 @@ fi
 
 # Build the plugin
 echo "Building plugin..."
+
+# Check if we're in the right directory
+if [ ! -d "src" ]; then
+    echo "ERROR: 'src' directory not found. Please run this script from the project root directory."
+    echo "Current directory: $(pwd)"
+    exit 1
+fi
+
+if [ ! -f "src/Jellyfin.Plugin.ExcludedLibraries.csproj" ]; then
+    echo "ERROR: Project file not found. Please run this script from the project root directory."
+    echo "Current directory: $(pwd)"
+    exit 1
+fi
+
 cd src
-dotnet clean -c Release > /dev/null 2>&1
-dotnet build -c Release --no-restore
+dotnet clean -c Release > /dev/null 2>&1 || true
+if ! dotnet build -c Release; then
+    echo ""
+    echo "ERROR: Build failed. See output above for details."
+    cd ..
+    exit 1
+fi
 cd ..
 
 if [ ! -f "$DLL_PATH" ]; then
@@ -181,10 +259,8 @@ fi
 echo "ZIP MD5: $ZIP_CHECKSUM"
 echo ""
 
-# Get release notes (for actual release)
-RELEASE_NOTES=$(get_release_notes)
-
 # Create GitHub release
+# Note: RELEASE_NOTES was already retrieved earlier for the preview
 echo "Creating GitHub release $TAG..."
 if gh release view "$TAG" &> /dev/null; then
     echo "Release $TAG already exists. Deleting and recreating..."
@@ -204,16 +280,11 @@ rm -f "$ZIP_PATH"
 # Update version numbers in all files
 echo "Updating version numbers in project files..."
 
+# Update manifest.json - add new version entry
+update_manifest_json "$VERSION" "$ZIP_CHECKSUM" "$TAG" "$RELEASE_NOTES" "$MANIFEST_FILE"
+
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # macOS
-    # Update manifest.json - version and checksum
-    sed -i '' "s/\"version\": \"[^\"]*\"/\"version\": \"${VERSION}.0\"/" "$MANIFEST_FILE"
-    sed -i '' "s/\"checksum\": \"[^\"]*\"/\"checksum\": \"$ZIP_CHECKSUM\"/" "$MANIFEST_FILE"
-    sed -i '' "s|releases/download/v[0-9.]*/[^\"]*|releases/download/$TAG/jellyfin-plugin-excludedlibraries_${VERSION}.zip|" "$MANIFEST_FILE"
-    
-    # Update build.yaml
-    sed -i '' "s/^version: .*/version: \"${VERSION}.0\"/" build.yaml
-    
     # Update .csproj file
     sed -i '' "s/<Version>[^<]*<\/Version>/<Version>${VERSION}.0<\/Version>/" src/Jellyfin.Plugin.ExcludedLibraries.csproj
     sed -i '' "s/<AssemblyVersion>[^<]*<\/AssemblyVersion>/<AssemblyVersion>${VERSION}.0<\/AssemblyVersion>/" src/Jellyfin.Plugin.ExcludedLibraries.csproj
@@ -227,12 +298,6 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     sed -i '' "s/version: '[0-9.]*'/version: '${VERSION}'/" src/Configuration/configPage.html
 else
     # Linux
-    sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"${VERSION}.0\"/" "$MANIFEST_FILE"
-    sed -i "s/\"checksum\": \"[^\"]*\"/\"checksum\": \"$ZIP_CHECKSUM\"/" "$MANIFEST_FILE"
-    sed -i "s|releases/download/v[0-9.]*/[^\"]*|releases/download/$TAG/jellyfin-plugin-excludedlibraries_${VERSION}.zip|" "$MANIFEST_FILE"
-    
-    sed -i "s/^version: .*/version: \"${VERSION}.0\"/" build.yaml
-    
     sed -i "s/<Version>[^<]*<\/Version>/<Version>${VERSION}.0<\/Version>/" src/Jellyfin.Plugin.ExcludedLibraries.csproj
     sed -i "s/<AssemblyVersion>[^<]*<\/AssemblyVersion>/<AssemblyVersion>${VERSION}.0<\/AssemblyVersion>/" src/Jellyfin.Plugin.ExcludedLibraries.csproj
     sed -i "s/<FileVersion>[^<]*<\/FileVersion>/<FileVersion>${VERSION}.0<\/FileVersion>/" src/Jellyfin.Plugin.ExcludedLibraries.csproj
@@ -248,7 +313,7 @@ echo ""
 
 # Commit and push all version changes
 echo "Committing and pushing version updates..."
-git add "$MANIFEST_FILE" build.yaml src/Jellyfin.Plugin.ExcludedLibraries.csproj src/Plugin.cs src/Configuration/configPage.html
+git add "$MANIFEST_FILE" src/Jellyfin.Plugin.ExcludedLibraries.csproj src/Plugin.cs src/Configuration/configPage.html
 git commit -m "Release $TAG"
 git push origin main
 
