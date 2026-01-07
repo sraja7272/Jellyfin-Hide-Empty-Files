@@ -13,7 +13,7 @@ get_release_notes() {
     if [ -n "$CI" ]; then
         # CI mode - get commit messages since last tag
         echo "Fetching commit messages since $LATEST_TAG..." >&2
-        if git rev-parse "$LATEST_TAG" >/dev/null 2>&1; then
+        if git rev-parse --verify "$LATEST_TAG" >/dev/null 2>&1; then
             # Get commits since the last tag
             COMMIT_MESSAGES=$(git log "${LATEST_TAG}..HEAD" --pretty=format:"- %s" 2>/dev/null || echo "")
             
