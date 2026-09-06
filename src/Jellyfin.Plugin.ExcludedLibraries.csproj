@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Jellyfin.Controller" Version="10.10.*" />
+    <PackageReference Include="Jellyfin.Controller" Version="10.11.1*" />
     <PackageReference Include="Jellyfin.Model" Version="10.10.*" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
